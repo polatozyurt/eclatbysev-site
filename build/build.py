@@ -1,14 +1,43 @@
 #!/usr/bin/env python3
-"""Generates the static Éclat By Sev site into ../eclat-site."""
-import os, html, json, pathlib, hashlib
+"""Generates the static Éclat By Sev site into ../site from the files in ../content.
 
-OUT = pathlib.Path(__file__).resolve().parent.parent / 'site'
+Content lives in JSON so the local admin panel (admin/server.py) can edit it:
+  content/settings.json  home page copy, announcement bar, brand details, blog intro
+  content/products.json  products (order = shop order)
+  content/pages.json     simple pages (about, FAQ, contact, legal)
+  content/posts.json     blog / journal posts
+Uploaded images live in site/assets/uploads/.
+"""
+import html, json, pathlib, hashlib, re, datetime
+
+ROOT = pathlib.Path(__file__).resolve().parent.parent
+OUT = ROOT / 'site'
+CONTENT = ROOT / 'content'
 SITE = 'https://eclatbysev.com'
+
+
+def load(name):
+    return json.loads((CONTENT / name).read_text(encoding='utf-8'))
+
+
+S = load('settings.json')
+PRODUCTS_ALL = load('products.json')
+SIMPLE = load('pages.json')
+POSTS_ALL = load('posts.json')
+
+PRODUCTS = [p for p in PRODUCTS_ALL if not p.get('hidden')]
+BY = {p['handle']: p for p in PRODUCTS}
+POSTS = sorted((p for p in POSTS_ALL if p.get('status') == 'published'),
+               key=lambda p: (p.get('date') or '', p.get('slug')), reverse=True)
+
+EMAIL = S['brand']['email']
+IG = S['brand']['instagram']
+IG_URL = f'https://instagram.com/{IG}'
+
 
 def asset_v(name):
     """Short content hash so browsers fetch new CSS/JS right after each deploy."""
     return hashlib.sha1((OUT / 'assets' / name).read_bytes()).hexdigest()[:10]
-EMAIL = 'info@eclatbysev.com'
 
 FONTS = ('<link rel="preconnect" href="https://fonts.googleapis.com">'
          '<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>'
@@ -40,50 +69,40 @@ I = {
  'gift': '<svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="#7A2632" stroke-width="1.4" aria-hidden="true"><rect x="4" y="9" width="16" height="11"/><path d="M4 13h16M12 9v11M12 9c-2-4-6-4-6-1s6 1 6 1c0 0 6 2 6-1s-4-3-6 1"/></svg>',
 }
 
-PRODUCTS = [
- dict(handle='lumiere-stacking-ring', name='Lumière Stacking Ring', type='Ring', cat='rings', tags='new bestsellers',
-      material='18k gold plated · stainless steel', price=48, was=None, badge='New', tone='ph--1',
-      features=['Water resistant', 'Tarnish free', 'Nickel free'], sizes=['50', '52', '54', '56', '58'],
-      desc="Delicate, stackable, and designed to be worn every single day. The Lumière ring pairs beautifully on its own or layered with other pieces from the Éclat collection. Crafted in 18k gold plated stainless steel — it won't tarnish, won't irritate, and won't let you down.",
-      details='18k gold plated stainless steel. Designed to stack with other Éclat rings.',
-      photos=['ring on its own', 'stacked on the hand', 'side profile', 'in the gift box'],
-      pairs=['douceur-chain-necklace', 'lumiere-douceur-set', 'petale-drop-earrings']),
- dict(handle='douceur-chain-necklace', name='Douceur Chain Necklace', type='Necklace', cat='necklaces', tags='new bestsellers gifts',
-      material='18k gold plated · 45 cm chain', price=65, was=None, badge='New', tone='ph--2',
-      features=['Water resistant', 'Gift ready'], sizes=None,
-      desc="A whisper of a necklace — fine chain, crescent moon pendant. The Douceur sits at the collarbone and adds just the right amount of light. Order it alone, or layer it with the Lumière ring for a full Éclat look. Comes in our signature gift box, ready to give.",
-      details='18k gold plated. 45 cm chain with crescent moon pendant.',
-      photos=['necklace on the collarbone', 'pendant detail', 'chain flat lay', 'in the gift box'],
-      pairs=['lumiere-stacking-ring', 'lumiere-douceur-set', 'velours-bangle']),
- dict(handle='petale-drop-earrings', name='Pétale Drop Earrings', type='Earrings', cat='earrings', tags='',
-      material='Sterling silver 925', price=52, was=None, badge='', tone='ph--3',
-      features=['Hypoallergenic', 'Nickel free'], sizes=None,
-      desc="Three petals, one elegant drop. The Pétale earrings frame the face with softness and movement — light enough to wear all day, beautiful enough to wear every night. Made in genuine 925 sterling silver, they're hypoallergenic and safe for even the most sensitive ears.",
-      details='Genuine 925 sterling silver. Sold as a pair.',
-      photos=['earrings worn', 'petal detail', 'pair flat lay', 'in the gift box'],
-      pairs=['douceur-chain-necklace', 'lumiere-stacking-ring', 'velours-bangle']),
- dict(handle='velours-bangle', name='Velours Bangle', type='Bracelet', cat='bracelets', tags='',
-      material='18k gold plated · adjustable', price=72, was=90, badge='Sale', tone='ph--4',
-      features=['Water resistant', 'Small batch', 'Adjustable'], sizes=None,
-      desc="Thick, bold, and quietly luxurious. The Velours bangle makes a statement without trying. The knurled texture catches the light beautifully, and the adjustable opening means it fits most wrist sizes comfortably. A piece you'll reach for every morning.",
-      details='18k gold plated with a knurled texture. Adjustable opening fits most wrists.',
-      photos=['bangle on the wrist', 'texture detail', 'side profile', 'in the gift box'],
-      pairs=['lumiere-stacking-ring', 'douceur-chain-necklace', 'petale-drop-earrings']),
- dict(handle='lumiere-douceur-set', name='Lumière & Douceur Set', type='Set', cat='sets', tags='new gifts',
-      material='Ring and necklace · gift boxed', price=105, was=None, badge='Gift', tone='ph--1',
-      features=['Gift ready', 'Water resistant'], sizes=['50', '52', '54', '56', '58'],
-      desc="The Lumière ring and the Douceur necklace — two of our most-loved pieces, together in one box. Designed to be worn as a set or separately, they share the same refined finish and quiet confidence. Comes beautifully packaged, ready to give or to keep.",
-      details='Lumière Stacking Ring and Douceur Chain Necklace, 18k gold plated, in one gift box.',
-      photos=['the set together', 'worn together', 'ring detail', 'in the gift box'],
-      pairs=['lumiere-stacking-ring', 'douceur-chain-necklace', 'velours-bangle']),
-]
-BY = {p['handle']: p for p in PRODUCTS}
+TONES = ['ph--1', 'ph--2', 'ph--3', 'ph--4']
 
-def e(s): return html.escape(s, quote=True)
-def eur(n): return f'€{n}'
 
-def head(title, desc, path, extra='', bodycls=''):
+def e(s): return html.escape(str(s), quote=True)
+def t(s): return html.escape(str(s), quote=False)          # text content
+def eur(n): return f'€{n:.2f}' if isinstance(n, float) and not n.is_integer() else f'€{int(n)}'
+
+
+def rich(s):
+    """Escape text, then turn *word* into the brand's italic accent."""
+    return re.sub(r'\*(.+?)\*', r'<span class="it">\1</span>', t(s))
+
+
+def lines(text, start=0, sep=' '):
+    """One <span class="ln"> per line (for the line-by-line reveal). A line wrapped in *...* is italic."""
+    out = []
+    for ln in [l.strip() for l in str(text).split('\n') if l.strip()]:
+        i = start + len(out)
+        m = re.fullmatch(r'\*([^*]+)\*', ln)
+        if m:
+            out.append(f'<span class="ln it" style="--i:{i}">{t(m.group(1))}</span>')
+        else:
+            out.append(f'<span class="ln" style="--i:{i}">{rich(ln)}</span>')
+    return sep.join(out), start + len(out)
+
+
+def img(src, alt='', cls='ph__img', lazy=True):
+    extra = ' loading="lazy" decoding="async"' if lazy else ''
+    return f'<img class="{cls}" src="{e(src)}" alt="{e(alt)}"{extra}>'
+
+
+def head(title, desc, path, extra='', bodycls='', image=''):
     url = SITE + path
+    og_img = f'\n<meta property="og:image" content="{e(SITE + image)}">' if image else ''
     return f'''<!doctype html>
 <html lang="en" class="no-js">
 <head>
@@ -96,7 +115,7 @@ def head(title, desc, path, extra='', bodycls=''):
 <meta property="og:type" content="website">
 <meta property="og:title" content="{e(title)}">
 <meta property="og:description" content="{e(desc)}">
-<meta property="og:url" content="{url}">
+<meta property="og:url" content="{url}">{og_img}
 <meta name="theme-color" content="#F6F1EA">
 <link rel="icon" type="image/png" href="/assets/favicon.png">
 {FONTS}
@@ -106,22 +125,33 @@ def head(title, desc, path, extra='', bodycls=''):
 <body class="{bodycls}">
 <a class="skip" href="#main">Skip to content</a>'''
 
+
+def announce():
+    items = [t(x) for x in S['announce'] if x.strip()]
+    if not items:
+        return ''
+    rest = ''.join(f'<span class="hide-sm">·</span><span class="hide-sm" style="opacity:1;padding:0">{x}</span>' for x in items[1:])
+    return f'\n<div class="announce">{items[0]}{rest}</div>'
+
+
 def header(active=''):
     def cur(k): return ' aria-current="page"' if k == active else ''
-    return f'''
-<div class="announce">Free shipping over €75<span class="hide-sm">·</span><span class="hide-sm" style="opacity:1;padding:0">30-day returns</span><span class="hide-sm">·</span><span class="hide-sm" style="opacity:1;padding:0">Handcrafted in small batches</span></div>
+    blog = S['blog']['navLabel']
+    blog_nav = f'\n      <a href="/blog/"{cur("blog")}>{t(blog)}</a>' if POSTS else ''
+    blog_sub = f'\n    <a href="/blog/">{t(blog)}</a>' if POSTS else ''
+    return f'''{announce()}
 <header class="header" data-header>
   <div class="wrap header__in">
     <nav class="nav" aria-label="Main">
       <a href="/shop"{cur('shop')}>Shop</a>
       <a href="/#collections">Collections</a>
       <a href="/shop?category=gifts">Gifts</a>
-      <a href="/about"{cur('about')}>Our story</a>
+      <a href="/about"{cur('about')}>Our story</a>{blog_nav}
     </nav>
     <button type="button" class="icon-btn menu-btn" data-menu-open aria-controls="mobile-menu" aria-expanded="false" aria-label="Open menu">{I['menu']}</button>
     <a class="logo" href="/" aria-label="Éclat By Sev, home"><img src="/assets/logo-ink.png" alt="Éclat By Sev" width="148" height="54"></a>
     <div class="header__tools">
-      <a class="icon-btn hide-sm" href="https://instagram.com/eclatbysev" aria-label="Instagram">{I['insta']}</a>
+      <a class="icon-btn hide-sm" href="{IG_URL}" aria-label="Instagram">{I['insta']}</a>
       <a class="icon-btn" href="/contact" aria-label="Contact">{I['mail']}</a>
     </div>
   </div>
@@ -141,16 +171,19 @@ def header(active=''):
     <a href="/shop?category=sets">Sets &amp; gifts</a>
   </nav>
   <div class="mobile-menu__sub">
-    <a href="/about">Our story</a>
+    <a href="/about">Our story</a>{blog_sub}
     <a href="/shipping-returns">Shipping &amp; returns</a>
     <a href="/faq">FAQ</a>
     <a href="/contact">Contact</a>
   </div>
-  <div class="mobile-menu__foot">@eclatbysev</div>
+  <div class="mobile-menu__foot">@{t(IG)}</div>
 </div>
 <main id="main">'''
 
-FOOTER = f'''
+
+def footer():
+    blog = f'<a href="/blog/">{t(S["blog"]["navLabel"])}</a>' if POSTS else ''
+    return f'''
 </main>
 <footer class="footer">
   <div class="wrap footer__in">
@@ -166,11 +199,11 @@ FOOTER = f'''
         <a href="/shipping-returns">Shipping &amp; returns</a><a href="/faq">FAQ</a><a href="/contact">Contact</a>
       </nav>
       <nav aria-label="About"><h2>About</h2>
-        <a href="/about">Our story</a><a href="https://instagram.com/eclatbysev">Instagram</a><a href="mailto:{EMAIL}">{EMAIL}</a>
+        <a href="/about">Our story</a>{blog}<a href="{IG_URL}">Instagram</a><a href="mailto:{EMAIL}">{EMAIL}</a>
       </nav>
     </div>
     <div class="footer__bottom">
-      <span>© 2026 Éclat By Sev</span>
+      <span>© {datetime.date.today().year} Éclat By Sev</span>
       <div class="footer__legal"><a href="/privacy">Privacy</a><a href="/terms">Terms</a></div>
     </div>
   </div>
@@ -179,42 +212,67 @@ FOOTER = f'''
   <a class="dock__item" href="/" data-dock="home"><svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.4" aria-hidden="true"><path d="M4 11l8-6 8 6v9h-5v-6h-6v6H4z"/></svg><span>Home</span></a>
   <a class="dock__item" href="/shop" data-dock="shop"><svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.4" aria-hidden="true"><path d="M5 8h14l-1 13H6L5 8z"/><path d="M9 8V6a3 3 0 016 0v2"/></svg><span>Shop</span></a>
   <a class="dock__item" href="/#collections" data-dock="collections"><svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.4" aria-hidden="true"><rect x="4" y="4" width="7" height="7"/><rect x="13" y="4" width="7" height="7"/><rect x="4" y="13" width="7" height="7"/><rect x="13" y="13" width="7" height="7"/></svg><span>Collections</span></a>
-  <a class="dock__item" href="https://instagram.com/eclatbysev" data-dock="insta"><svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.4" aria-hidden="true"><rect x="3" y="3" width="18" height="18" rx="5"/><circle cx="12" cy="12" r="4"/><circle cx="17.5" cy="6.5" r=".6" fill="currentColor"/></svg><span>Instagram</span></a>
+  <a class="dock__item" href="{IG_URL}" data-dock="insta"><svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.4" aria-hidden="true"><rect x="3" y="3" width="18" height="18" rx="5"/><circle cx="12" cy="12" r="4"/><circle cx="17.5" cy="6.5" r=".6" fill="currentColor"/></svg><span>Instagram</span></a>
 </nav>
 <script src="/assets/site.js?v={asset_v('site.js')}" defer></script>
 </body>
 </html>
 '''
 
+
 def price_html(p):
-    if p['was']:
+    if p.get('was'):
         return f'<span class="price price--sale"><b>{eur(p["price"])}</b><s>{eur(p["was"])}</s></span>'
     return f'<span class="price"><b>{eur(p["price"])}</b></span>'
 
+
 ALT_TONE = {'ph--1': 'ph--3', 'ph--2': 'ph--4', 'ph--3': 'ph--1', 'ph--4': 'ph--2'}
 
-def photo(handle, n):
-    """Real product photo if present at assets/products/<handle>-<n>.jpg|webp, else None."""
+
+def legacy_photo(handle, n):
+    """Photo dropped by hand at assets/products/<handle>-<n>.jpg|webp (pre-admin convention)."""
     for ext in ('webp', 'jpg', 'jpeg', 'png'):
         if (OUT / 'assets' / 'products' / f'{handle}-{n}.{ext}').exists():
             return f'/assets/products/{handle}-{n}.{ext}'
     return None
 
+
+def images(p):
+    """[{src, alt}] for a product: uploaded images first, else hand-dropped files."""
+    labels = p.get('photos') or []
+    out = []
+    for i, im in enumerate(p.get('images') or []):
+        if im.get('src'):
+            label = labels[i] if i < len(labels) else ''
+            out.append({'src': im['src'], 'alt': im.get('alt') or (p['name'] + (' — ' + label if label and i else ''))})
+    if not out:
+        for n in (1, 2):
+            src = legacy_photo(p['handle'], n)
+            if src:
+                label = labels[1] if len(labels) > 1 else ''
+                out.append({'src': src, 'alt': p['name'] + (' — ' + label if n == 2 else '')})
+    return out
+
+
 def media(p, label):
     """Two stacked layers: primary + secondary angle that cross-fades on hover/press."""
-    layers = []
-    for n, tone in ((1, p['tone']), (2, ALT_TONE[p['tone']])):
-        src = photo(p['handle'], n)
-        inner = (f'<img src="{src}" alt="{e(p["name"])}{" — " + label if n == 2 else ""}" loading="lazy" decoding="async">'
-                 if src else (RING_L if n == 1 else RING_DETAIL))
-        layers.append(f'<span class="media__layer media__layer--{n} {tone}" aria-hidden="{"true" if n == 2 else "false"}">{inner}</span>')
-    return ''.join(layers)
+    tone = p.get('tone') or 'ph--1'
+    ims = images(p)
+    if not ims:
+        return (f'<span class="media__layer media__layer--1 {tone}" aria-hidden="false">{RING_L}</span>'
+                f'<span class="media__layer media__layer--2 {ALT_TONE[tone]}" aria-hidden="true">{RING_DETAIL}</span>')
+    layers = f'<span class="media__layer media__layer--1 {tone}" aria-hidden="false"><img src="{e(ims[0]["src"])}" alt="{e(ims[0]["alt"])}" loading="lazy" decoding="async"></span>'
+    if len(ims) > 1:
+        layers += f'<span class="media__layer media__layer--2 {ALT_TONE[tone]}" aria-hidden="true"><img src="{e(ims[1]["src"])}" alt="{e(ims[1]["alt"])}" loading="lazy" decoding="async"></span>'
+    return layers
+
 
 def card(p, i=0, shop=False):
-    badge = f'<span class="badge">{e(p["badge"])}</span>' if p['badge'] else ''
-    attrs = f' data-cat="{p["cat"]}" data-tags="{p["tags"]}" data-price="{p["price"]}" data-order="{i}"' if shop else ''
+    badge = f'<span class="badge">{e(p["badge"])}</span>' if p.get('badge') else ''
+    attrs = f' data-cat="{p["cat"]}" data-tags="{p.get("tags", "")}" data-price="{p["price"]}" data-order="{i}"' if shop else ''
+    labels = p.get('photos') or ['', '']
     return f'''<a class="card" href="/products/{p['handle']}" data-reveal{attrs}>
-  <div class="media">{media(p, p['photos'][1])}{badge}</div>
+  <div class="media">{media(p, labels[1] if len(labels) > 1 else '')}{badge}</div>
   <div class="card__meta">
     <span class="card__type">{e(p['type'])}</span>
     <span class="card__row"><span class="card__name">{e(p['name'])}</span>{price_html(p)}</span>
@@ -222,51 +280,63 @@ def card(p, i=0, shop=False):
   </div>
 </a>'''
 
+
 def join_band():
+    j = S['join']
     return f'''
 <section class="join" aria-labelledby="join-h">
   <div class="join__in" data-reveal>
-    <span class="eyebrow">Stay in the loop</span>
-    <h2 class="h-section" id="join-h">New pieces. <span class="it">Early access.</span></h2>
-    <p class="lead">New collections and small-batch drops land on Instagram first. Online checkout opens soon — until then, order any piece by email.</p>
+    <span class="eyebrow">{t(j['eyebrow'])}</span>
+    <h2 class="h-section" id="join-h">{rich(j['title'])}</h2>
+    <p class="lead">{rich(j['text'])}</p>
     <div class="join__cta">
-      <a class="btn btn--ink" data-magnetic href="https://instagram.com/eclatbysev">Follow @eclatbysev</a>
+      <a class="btn btn--ink" data-magnetic href="{IG_URL}">Follow @{t(IG)}</a>
       <a class="btn btn--line" data-magnetic href="mailto:{EMAIL}">Email us</a>
     </div>
   </div>
 </section>'''
+
 
 def write(rel, content):
     path = OUT / rel
     path.parent.mkdir(parents=True, exist_ok=True)
     path.write_text(content, encoding='utf-8')
 
+
+def ph(tone, src, alt='', cls=''):
+    """A placeholder block that shows an uploaded image when there is one."""
+    inner = img(src, alt) if src else ''
+    c = f'ph {tone}'.strip() + (f' {cls}' if cls else '')
+    return f'<div class="{c}">{inner}</div>'
+
+
 # ---------- Home ----------
 def home():
-    new = [BY['lumiere-stacking-ring'], BY['douceur-chain-necklace'], BY['petale-drop-earrings'], BY['velours-bangle']]
+    H, C, N, P, F, ST = S['hero'], S['collections'], S['newIn'], S['philosophy'], S['feature'], S['story']
+    new = [BY[h] for h in N['products'] if h in BY]
     ld = {"@context": "https://schema.org", "@type": "Organization", "name": "Éclat By Sev", "url": SITE,
-          "logo": SITE + "/assets/logo-ink.png", "email": EMAIL, "sameAs": ["https://instagram.com/eclatbysev"]}
-    body = head('Éclat By Sev — Handcrafted statement jewellery',
-                'Statement jewellery designed by Sev and handcrafted in small batches. Water resistant, nickel free pieces made to be worn every day.',
-                '/', f'<script type="application/ld+json">{json.dumps(ld, ensure_ascii=False)}</script>')
+          "logo": SITE + "/assets/logo-ink.png", "email": EMAIL, "sameAs": [IG_URL]}
+    body = head(S['seo']['title'], S['seo']['description'],
+                '/', f'<script type="application/ld+json">{json.dumps(ld, ensure_ascii=False)}</script>',
+                image=S['seo'].get('image') or H.get('image') or '')
     body += header()
-    hero_src = None
-    for ext in ('webp', 'jpg', 'jpeg'):
-        if (OUT / 'assets' / f'hero.{ext}').exists():
-            hero_src = f'/assets/hero.{ext}'; break
-    hero_img = (f'<img class="hero__img" src="{hero_src}" alt="Hands wearing the Lumière Stacking Ring and Douceur Chain Necklace" fetchpriority="high">'
+    hero_src = H.get('image') or None
+    if not hero_src:
+        for ext in ('webp', 'jpg', 'jpeg'):
+            if (OUT / 'assets' / f'hero.{ext}').exists():
+                hero_src = f'/assets/hero.{ext}'; break
+    hero_img = (f'<img class="hero__img" src="{e(hero_src)}" alt="{e(H["imageAlt"])}" fetchpriority="high">'
                 if hero_src else f'<span class="hero__art" aria-hidden="true">{RING_L}</span>')
-    hot = [  # x/y are % positions on the hero photo — adjust once the real photo is in place
-        dict(p=BY['lumiere-stacking-ring'], x=52, y=56, id='qv-ring'),
-        dict(p=BY['douceur-chain-necklace'], x=30, y=22, id='qv-neck'),
-    ]
     spots = ''
-    for h in hot:
-        p = h['p']
+    for n, h in enumerate(H.get('hotspots') or []):
+        p = BY.get(h['product'])
+        if not p:
+            continue
+        sid = {0: 'qv-ring', 1: 'qv-neck'}.get(n, f'qv-{n}')
         spots += f"""
       <div class="spot" style="--x:{h['x']}%;--y:{h['y']}%">
-        <button type="button" class="spot__btn" aria-expanded="false" aria-controls="{h['id']}" aria-label="Quick view: {e(p['name'])}"><span class="spot__dot"></span></button>
-        <div class="qv" id="{h['id']}" role="dialog" aria-label="{e(p['name'])}" hidden>
+        <button type="button" class="spot__btn" aria-expanded="false" aria-controls="{sid}" aria-label="Quick view: {e(p['name'])}"><span class="spot__dot"></span></button>
+        <div class="qv" id="{sid}" role="dialog" aria-label="{e(p['name'])}" hidden>
           <span class="qv__type">{e(p['type'])}</span>
           <b class="qv__name">{e(p['name'])}</b>
           <span class="qv__mat">{e(p['material'])}</span>
@@ -278,6 +348,52 @@ def home():
           <button type="button" class="qv__close" aria-label="Close quick view"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" aria-hidden="true"><path d="M6 6l12 12M18 6L6 18"/></svg></button>
         </div>
       </div>"""
+    h1, _ = lines(H['title'])
+    icons = ['star', 'truck', 'return', 'clock']
+    promise = '\n    '.join(f'<span class="promise__item">{I[icons[i % 4]]}{t(x)}</span>' for i, x in enumerate(S['promise']))
+
+    tile_tone = ['ph--1', 'ph--4', 'ph--3', 'ph--3', 'ph--4']
+    tile_d = ['', ' style="--d:.08s"', ' style="--d:.16s"', ' style="--d:.08s"', ' style="--d:.16s"']
+    tiles = []
+    for i, tl in enumerate(C['tiles']):
+        inner = img(tl['image'], tl['name']) if tl.get('image') else (RING_L if i == 0 else '')
+        big = ' tile--big' if i == 0 else ''
+        tiles.append(f'<a class="tile{big}" href="/shop?category={e(tl["category"])}" data-reveal{tile_d[i % 5]}><div class="media">'
+                     f'<span class="media__layer {tile_tone[i % 5]}">{inner}</span></div>'
+                     f'<span class="tile__name"><span>{t(tl["name"])}</span><span>{i + 1:02d}</span></span></a>')
+    tiles = '\n    '.join(tiles)
+
+    quote, n = lines(P['quote'])
+    pbody, _ = lines(P['body'], n)
+    ed_inner = img(P['image'], '') if P.get('image') else RING_D
+
+    fp = BY.get(F['product'])
+    feature = ''
+    if fp:
+        f_inner = img(F['image'], fp['name']) if F.get('image') else RING_DETAIL
+        feature = f'''
+<section class="wrap section" aria-labelledby="set-h">
+  <div class="feature" data-reveal>
+    <div class="feature__text">
+      <span class="eyebrow">{t(F['eyebrow'])}</span>
+      <h2 class="h-section" id="set-h">{rich(F['title'])}</h2>
+      <p class="lead" style="font-size:16px">{rich(F['text'])}</p>
+      <div class="feature__buy">
+        <span class="feature__price">{eur(fp['price'])}</span>
+        <a class="btn btn--ink" data-magnetic href="/products/{fp['handle']}">{t(F['cta'])}</a>
+      </div>
+    </div>
+    <div class="media feature__media"><span class="media__layer ph--3">{f_inner}</span></div>
+  </div>
+</section>
+'''
+    st_title, n = lines(ST['title'], 0, '<br>')
+    st_body, _ = lines(ST['body'], n)
+    st_imgs = (ST.get('images') or []) + ['', '']
+    story_media = ph('ph--1', st_imgs[0]) + ph('', st_imgs[1])
+    ig_imgs = (S['instagram'].get('images') or []) + [''] * 6
+    insta = ''.join(ph(TONES[i % 4], ig_imgs[i]) for i in range(6))
+
     body += f'''
 <section class="hero">
   <div class="hero__media" data-reveal="fade">
@@ -285,11 +401,11 @@ def home():
     <span class="hero__hint" aria-hidden="true">Explore the pieces</span>
   </div>
   <div class="hero__text">
-    <span class="eyebrow eyebrow--rule" data-reveal>New collection · Autumn 2026</span>
-    <h1 class="h-display lines" data-reveal><span class="ln" style="--i:0">Jewellery that</span> <span class="ln" style="--i:1">tells <span class="it">your</span> story</span></h1>
-    <p class="lead" data-reveal style="--d:.25s">Statement pieces, handcrafted in small batches. Water resistant, nickel free and made to be worn every day.</p>
+    <span class="eyebrow eyebrow--rule" data-reveal>{t(H['eyebrow'])}</span>
+    <h1 class="h-display lines" data-reveal>{h1}</h1>
+    <p class="lead" data-reveal style="--d:.25s">{rich(H['lead'])}</p>
     <div class="hero__cta" data-reveal style="--d:.35s">
-      <a class="btn btn--ink" data-magnetic href="/shop">Shop the collection {I['arrow']}</a>
+      <a class="btn btn--ink" data-magnetic href="/shop">{t(H['cta'])} {I['arrow']}</a>
       <a class="link-caps" href="/about">Meet Sev</a>
     </div>
   </div>
@@ -297,30 +413,23 @@ def home():
 
 <section class="promise" aria-label="Our promise">
   <div class="wrap promise__in">
-    <span class="promise__item">{I['star']}Handcrafted in small batches</span>
-    <span class="promise__item">{I['truck']}Free shipping over €75</span>
-    <span class="promise__item">{I['return']}30-day easy returns</span>
-    <span class="promise__item">{I['clock']}Ships in 3–5 days</span>
+    {promise}
   </div>
 </section>
 
 <section class="wrap section" id="collections" aria-labelledby="col-h">
   <div class="head" data-reveal>
-    <div><span class="eyebrow">Shop by collection</span><h2 class="h-section" id="col-h">Pieces for <span class="it">every</span> moment</h2></div>
+    <div><span class="eyebrow">{t(C['eyebrow'])}</span><h2 class="h-section" id="col-h">{rich(C['title'])}</h2></div>
     <a class="link-caps" href="/shop">View all</a>
   </div>
   <div class="cols">
-    <a class="tile tile--big" href="/shop?category=rings" data-reveal><div class="media"><span class="media__layer ph--1">{RING_L}</span></div><span class="tile__name"><span>Rings</span><span>01</span></span></a>
-    <a class="tile" href="/shop?category=necklaces" data-reveal style="--d:.08s"><div class="media"><span class="media__layer ph--4"></span></div><span class="tile__name"><span>Necklaces</span><span>02</span></span></a>
-    <a class="tile" href="/shop?category=earrings" data-reveal style="--d:.16s"><div class="media"><span class="media__layer ph--3"></span></div><span class="tile__name"><span>Earrings</span><span>03</span></span></a>
-    <a class="tile" href="/shop?category=bracelets" data-reveal style="--d:.08s"><div class="media"><span class="media__layer ph--3"></span></div><span class="tile__name"><span>Bracelets &amp; Anklets</span><span>04</span></span></a>
-    <a class="tile" href="/shop?category=sets" data-reveal style="--d:.16s"><div class="media"><span class="media__layer ph--4"></span></div><span class="tile__name"><span>Sets</span><span>05</span></span></a>
+    {tiles}
   </div>
 </section>
 
 <section class="wrap section section--pb" aria-labelledby="new-h">
   <div class="head" data-reveal>
-    <div><span class="eyebrow">Just arrived</span><h2 class="h-section" id="new-h">New in</h2></div>
+    <div><span class="eyebrow">{t(N['eyebrow'])}</span><h2 class="h-section" id="new-h">{rich(N['title'])}</h2></div>
     <a class="link-caps" href="/shop?category=new">Shop new in</a>
   </div>
   <div class="grid grid--4">
@@ -330,56 +439,42 @@ def home():
 
 <section class="editorial" aria-labelledby="phil-h">
   <div class="wrap editorial__in">
-    <div class="ph ph--night editorial__media" data-reveal="fade">{RING_D}</div>
+    <div class="ph ph--night editorial__media" data-reveal="fade">{ed_inner}</div>
     <div class="editorial__text">
-      <span class="eyebrow" id="phil-h" data-reveal>The philosophy</span>
-      <p class="editorial__quote lines" data-reveal><span class="ln" style="--i:0">Every piece</span> <span class="ln" style="--i:1">holds a</span> <span class="ln it" style="--i:2">quiet power.</span></p>
-      <p class="body lines" data-reveal><span class="ln" style="--i:3">Éclat isn't just jewellery.</span> <span class="ln" style="--i:4">It's the ring you reach for before a big day.</span> <span class="ln" style="--i:5">The earrings you wear when you want to feel like yourself again.</span></p>
+      <span class="eyebrow" id="phil-h" data-reveal>{t(P['eyebrow'])}</span>
+      <p class="editorial__quote lines" data-reveal>{quote}</p>
+      <p class="body lines" data-reveal>{pbody}</p>
       <a class="btn btn--line" data-magnetic href="/about" data-reveal style="--d:.5s">Read our story</a>
     </div>
   </div>
 </section>
-
-<section class="wrap section" aria-labelledby="set-h">
-  <div class="feature" data-reveal>
-    <div class="feature__text">
-      <span class="eyebrow">Gift ready</span>
-      <h2 class="h-section" id="set-h">The Lumière &amp; Douceur Set</h2>
-      <p class="lead" style="font-size:16px">Our stacking ring and chain necklace, paired and boxed in our signature gift box.</p>
-      <div class="feature__buy">
-        <span class="feature__price">€105</span>
-        <a class="btn btn--ink" data-magnetic href="/products/lumiere-douceur-set">Shop the set</a>
-      </div>
-    </div>
-    <div class="media feature__media"><span class="media__layer ph--3">{RING_DETAIL}</span></div>
-  </div>
-</section>
-
+{feature}
 <section class="wrap section section--pb story" id="story" aria-labelledby="story-h">
   <div class="story__text">
-    <span class="eyebrow" data-reveal>Our story</span>
-    <h2 class="h-section lines" id="story-h" data-reveal><span class="ln" style="--i:0">Made by hand.</span><br><span class="ln it" style="--i:1">Made with heart.</span></h2>
-    <p class="prose lines" data-reveal><span class="ln" style="--i:2">Éclat By Sev was born from a simple belief —</span> <span class="ln" style="--i:3">that jewellery should feel like a second skin.</span> <span class="ln" style="--i:4">Founded by Sev, each collection is designed and handcrafted in small batches,</span> <span class="ln" style="--i:5">with attention to every curve and detail.</span></p>
+    <span class="eyebrow" data-reveal>{t(ST['eyebrow'])}</span>
+    <h2 class="h-section lines" id="story-h" data-reveal>{st_title}</h2>
+    <p class="prose lines" data-reveal>{st_body}</p>
     <div class="story__def" data-reveal style="--d:.3s">
-      <span class="it">éclat</span>
-      <p class="prose">French for radiance. It's what we want every woman who wears our pieces to feel — seen, luminous, and entirely herself.</p>
+      <span class="it">{t(ST['word'])}</span>
+      <p class="prose">{rich(ST['definition'])}</p>
     </div>
     <a class="link-caps" href="/about" data-reveal style="--d:.4s">Meet Sev</a>
   </div>
-  <div class="story__media" data-reveal="fade"><div class="ph ph--1"></div><div class="ph"></div></div>
+  <div class="story__media" data-reveal="fade">{story_media}</div>
 </section>
 
 <section class="wrap section--pb insta" aria-label="Instagram">
   <div class="insta__head" data-reveal>
-    <span class="insta__handle">@eclatbysev</span>
-    <a class="link-caps" href="https://instagram.com/eclatbysev">Follow on Instagram</a>
+    <span class="insta__handle">@{t(IG)}</span>
+    <a class="link-caps" href="{IG_URL}">Follow on Instagram</a>
   </div>
   <div class="insta__grid" data-reveal>
-    <div class="ph ph--1"></div><div class="ph ph--2"></div><div class="ph ph--3"></div><div class="ph ph--4"></div><div class="ph ph--1"></div><div class="ph ph--2"></div>
+    {insta}
   </div>
 </section>
-''' + join_band() + FOOTER
+''' + join_band() + footer()
     write('index.html', body)
+
 
 # ---------- Shop ----------
 def shop():
@@ -399,7 +494,7 @@ def shop():
   <div class="wrap filters__in">
     <div class="chips" role="group" aria-label="Filter by category">{chips}</div>
     <div class="filters__meta">
-      <span id="shop-count" aria-live="polite">{len(PRODUCTS)} pieces</span>
+      <span id="shop-count" aria-live="polite">{len(PRODUCTS)} {"piece" if len(PRODUCTS) == 1 else "pieces"}</span>
       <label>Sort <select id="sort"><option value="featured">Featured</option><option value="low">Price, low to high</option><option value="high">Price, high to low</option></select></label>
     </div>
   </div>
@@ -415,32 +510,57 @@ def shop():
     <div><b>Nickel free</b><span>Gentle on sensitive skin.</span></div>
     <div><b>Gift ready</b><span>Every order arrives in our signature box.</span></div>
   </div>
-</section>''' + FOOTER
+</section>''' + footer()
     write('shop.html', body)
+
 
 # ---------- Products ----------
 def product(p):
-    tones = ['ph--1', 'ph--2', 'ph--3', 'ph--4']
-    thumbs = ''.join(f'<button type="button" class="thumb ph {tones[i]}" data-thumb="{tones[i]}" aria-pressed="{"true" if i==0 else "false"}" aria-label="Photo {i+1}: {e(ph)}"></button>' for i, ph in enumerate(p['photos']))
-    badge = f'<span class="badge">{e(p["badge"])}</span>' if p['badge'] else ''
-    was = f'<s>{eur(p["was"])}</s>' if p['was'] else ''
-    tags = ''.join(f'<span>{e(t)}</span>' for t in p['features'])
+    ims = images(p)
+    badge = f'<span class="badge">{e(p["badge"])}</span>' if p.get('badge') else ''
+    if ims:
+        thumbs = ''.join(
+            f'<button type="button" class="thumb ph {TONES[i % 4]}" data-thumb="{TONES[0]}" data-src="{e(im["src"])}" data-alt="{e(im["alt"])}" '
+            f'aria-pressed="{"true" if i==0 else "false"}" aria-label="Photo {i+1}: {e(im["alt"])}">{img(im["src"], "")}</button>'
+            for i, im in enumerate(ims)) if len(ims) > 1 else ''
+        main_img = f'<img class="ph__img" id="gallery-img" src="{e(ims[0]["src"])}" alt="{e(ims[0]["alt"])}">'
+        main = f'<div class="ph gallery__main {TONES[0]}" id="gallery-main">{main_img}{badge}</div>'
+    else:
+        thumbs = ''.join(f'<button type="button" class="thumb ph {TONES[i]}" data-thumb="{TONES[i]}" aria-pressed="{"true" if i==0 else "false"}" aria-label="Photo {i+1}: {e(lb)}"></button>' for i, lb in enumerate((p.get('photos') or [])[:4]))
+        main = f'<div class="ph gallery__main {TONES[0]}" id="gallery-main">{RING_L}{badge}</div>'
+    was = f'<s>{eur(p["was"])}</s>' if p.get('was') else ''
+    tags = ''.join(f'<span>{e(x)}</span>' for x in p.get('features') or [])
     sizes = ''
-    if p['sizes']:
-        btns = ''.join(f'<button type="button" class="size" data-size="{s}" aria-pressed="false">{s}</button>' for s in p['sizes'])
+    if p.get('sizes'):
+        btns = ''.join(f'<button type="button" class="size" data-size="{e(s)}" aria-pressed="false">{e(s)}</button>' for s in p['sizes'])
         sizes = f'''<div class="opt">
   <div class="opt__head"><span class="opt__label">Ring size <span id="size-label">· choose your size</span></span><a href="/faq#ring-size" style="font-size:13px;text-underline-offset:4px">Size guide</a></div>
   <div class="sizes" role="group" aria-label="Ring size">{btns}</div>
 </div>'''
-    order_label = 'Select a size' if p['sizes'] else 'Order by email'
+    order_label = 'Select a size' if p.get('sizes') else 'Order by email'
     order_btn = f'<a class="btn btn--ink btn--block" data-order="{e(p["name"])}" href="mailto:{EMAIL}">{order_label}</a>'
-    pairs = ''.join(f'''<a class="pair" href="/products/{q['handle']}"><span class="ph {q['tone']}"></span><span><small>{e(q['type'])}</small><b>{e(q['name'])}</b><span class="p">{eur(q['price'])}</span></span></a>''' for q in (BY[h] for h in p['pairs']))
+
+    def pair(q):
+        qi = images(q)
+        inner = img(qi[0]['src'], '') if qi else ''
+        return f'''<a class="pair" href="/products/{q['handle']}"><span class="ph {q.get('tone') or 'ph--1'}">{inner}</span><span><small>{e(q['type'])}</small><b>{e(q['name'])}</b><span class="p">{eur(q['price'])}</span></span></a>'''
+    pairs = ''.join(pair(BY[h]) for h in p.get('pairs') or [] if h in BY and h != p['handle'])
     ld = {"@context": "https://schema.org", "@type": "Product", "name": p['name'], "description": p['desc'],
           "brand": {"@type": "Brand", "name": "Éclat By Sev"}, "material": p['material'],
           "offers": {"@type": "Offer", "price": str(p['price']), "priceCurrency": "EUR", "url": f"{SITE}/products/{p['handle']}"}}
+    if ims:
+        ld['image'] = [SITE + im['src'] for im in ims]
     body = head(f"{p['name']} — Éclat By Sev", p['desc'][:155], f"/products/{p['handle']}",
-                f'<script type="application/ld+json">{json.dumps(ld, ensure_ascii=False)}</script>', bodycls='page-product')
+                f'<script type="application/ld+json">{json.dumps(ld, ensure_ascii=False)}</script>', bodycls='page-product',
+                image=ims[0]['src'] if ims else '')
     body += header('shop')
+    pairs_section = f'''
+<section class="pairs" aria-labelledby="pairs-h">
+  <div class="wrap pairs__in">
+    <h2 class="h-section" style="font-size:clamp(30px,3.2vw,42px)" id="pairs-h">Pairs <span class="it">beautifully</span> with</h2>
+    <div class="pairs__row">{pairs}</div>
+  </div>
+</section>''' if pairs else ''
     body += f'''
 <div class="wrap crumbs-wrap" style="padding-top:28px;padding-bottom:28px">
   <nav class="crumbs" aria-label="Breadcrumb"><a href="/">Home</a><span>/</span><a href="/shop?category={p['cat']}">{e(p['type'])}</a><span>/</span>{e(p['name'])}</nav>
@@ -448,7 +568,7 @@ def product(p):
 <section class="wrap pdp">
   <div class="gallery">
     <div class="thumbs" role="group" aria-label="Product photos">{thumbs}</div>
-    <div class="ph gallery__main {tones[0]}" id="gallery-main">{RING_L}{badge}</div>
+    {main}
   </div>
   <div class="pdp__info">
     <div style="display:flex;flex-direction:column;gap:10px">
@@ -475,37 +595,126 @@ def product(p):
     </div>
   </div>
 </section>
-<div class="sticky-buy">{order_btn}</div>
-<section class="pairs" aria-labelledby="pairs-h">
-  <div class="wrap pairs__in">
-    <h2 class="h-section" style="font-size:clamp(30px,3.2vw,42px)" id="pairs-h">Pairs <span class="it">beautifully</span> with</h2>
-    <div class="pairs__row">{pairs}</div>
-  </div>
-</section>''' + FOOTER
+<div class="sticky-buy">{order_btn}</div>{pairs_section}''' + footer()
     write(f"products/{p['handle']}.html", body)
 
-# ---------- Simple pages ----------
-SIMPLE = json.load(open(pathlib.Path(__file__).resolve().parent / 'pages.json', encoding='utf-8'))
 
-def simple(slug, title, desc, eyebrow, h1, intro, inner, active=''):
+# ---------- Simple pages ----------
+def simple(slug, title, desc, eyebrow, h1, intro, inner, active='', **_):
     body = head(f'{title} — Éclat By Sev', desc, f'/{slug}')
     body += header(active)
-    intro_html = f'<p>{intro}</p>' if intro else ''
+    intro_html = f'<p>{intro}</p>' if intro else ''  # intro may hold simple HTML
     body += f'''
 <article class="simple">
   <div class="simple__hero">
-    <span class="eyebrow">{eyebrow}</span>
-    <h1>{h1}</h1>
+    <span class="eyebrow">{t(eyebrow)}</span>
+    <h1>{rich(h1)}</h1>
     {intro_html}
   </div>
   {inner}
-</article>''' + FOOTER
+</article>''' + footer()
     write(f'{slug}.html', body)
+
+
+# ---------- Blog ----------
+def nice_date(d):
+    try:
+        x = datetime.date.fromisoformat(d)
+        return f'{x.day} {x:%B %Y}'
+    except (ValueError, TypeError):
+        return d or ''
+
+
+def post_card(p, i):
+    cover = p.get('cover') or {}
+    media_inner = (f'<span class="media__layer ph--{i % 4 + 1}">{img(cover["src"], cover.get("alt") or p["title"], "")}</span>'
+                   if cover.get('src') else f'<span class="media__layer ph--{i % 4 + 1}">{RING_L}</span>')
+    return f'''<a class="post-card" href="/blog/{p['slug']}" data-reveal>
+  <div class="media post-card__media">{media_inner}</div>
+  <div class="post-card__meta">
+    <time datetime="{e(p.get('date', ''))}">{t(nice_date(p.get('date')))}</time>
+    <h2 class="post-card__title">{t(p['title'])}</h2>
+    {f'<p>{t(p["excerpt"])}</p>' if p.get('excerpt') else ''}
+    <span class="link-caps">Read</span>
+  </div>
+</a>'''
+
+
+def blog_index():
+    B = S['blog']
+    body = head(f'{B["navLabel"]} — Éclat By Sev', B['description'], '/blog/')
+    body += header('blog')
+    body += f'''
+<section class="wrap page-head">
+  <div>
+    <nav class="crumbs" aria-label="Breadcrumb"><a href="/">Home</a><span>/</span>{t(B['navLabel'])}</nav>
+    <h1 class="h-display" style="font-size:clamp(44px,5.6vw,76px)">{rich(B['title'])}</h1>
+  </div>
+  <p>{rich(B['intro'])}</p>
+</section>
+<section class="wrap section--pb" style="padding-top:44px" aria-label="Posts">
+  <div class="post-grid">
+    {''.join(post_card(p, i) for i, p in enumerate(POSTS))}
+  </div>
+</section>''' + join_band() + footer()
+    write('blog/index.html', body)
+
+
+def blog_post(p, i):
+    cover = p.get('cover') or {}
+    url = f"/blog/{p['slug']}"
+    desc = p.get('seoDescription') or p.get('excerpt') or S['blog']['description']
+    ld = {"@context": "https://schema.org", "@type": "BlogPosting", "headline": p['title'], "datePublished": p.get('date', ''),
+          "author": {"@type": "Person", "name": p.get('author') or 'Sev'}, "publisher": {"@type": "Organization", "name": "Éclat By Sev"},
+          "mainEntityOfPage": SITE + url, "description": desc}
+    if cover.get('src'):
+        ld['image'] = SITE + cover['src']
+    body = head(f"{p['title']} — Éclat By Sev", desc[:160], url,
+                f'<script type="application/ld+json">{json.dumps(ld, ensure_ascii=False)}</script>', image=cover.get('src', ''))
+    body += header('blog')
+    cover_html = (f'<figure class="post__cover">{img(cover["src"], cover.get("alt", ""), "", lazy=False)}</figure>'
+                  if cover.get('src') else '')
+    others = [q for q in POSTS if q['slug'] != p['slug']][:2]
+    more = (f'''
+<section class="wrap section--pb post-more" aria-labelledby="more-h">
+  <div class="head"><div><h2 class="h-section" id="more-h">Keep <span class="it">reading</span></h2></div><a class="link-caps" href="/blog/">All posts</a></div>
+  <div class="post-grid">{''.join(post_card(q, j) for j, q in enumerate(others))}</div>
+</section>''' if others else '')
+    body += f'''
+<article class="simple post">
+  <div class="simple__hero">
+    <nav class="crumbs" aria-label="Breadcrumb"><a href="/">Home</a><span>/</span><a href="/blog/">{t(S['blog']['navLabel'])}</a></nav>
+    <span class="eyebrow"><time datetime="{e(p.get('date', ''))}">{t(nice_date(p.get('date')))}</time>{(' · ' + t(p['author'])) if p.get('author') else ''}</span>
+    <h1>{rich(p['title'])}</h1>
+    {f'<p>{t(p["excerpt"])}</p>' if p.get('excerpt') else ''}
+  </div>
+  {cover_html}
+  <div class="post__body">
+  {p.get('body', '')}
+  </div>
+</article>{more}''' + footer()
+    write(f"blog/{p['slug']}.html", body)
+
+
+def clean_stale(folder, keep):
+    d = OUT / folder
+    if d.is_dir():
+        for f in d.glob('*.html'):
+            if f.name not in keep:
+                f.unlink()
+
 
 def build():
     home(); shop()
     for p in PRODUCTS: product(p)
+    clean_stale('products', {f"{p['handle']}.html" for p in PRODUCTS})
     for pg in SIMPLE: simple(**pg)
+    if POSTS:
+        blog_index()
+        for i, p in enumerate(POSTS): blog_post(p, i)
+        clean_stale('blog', {'index.html'} | {f"{p['slug']}.html" for p in POSTS})
+    else:
+        clean_stale('blog', set())
     # 404
     body = head('Page not found — Éclat By Sev', 'This page could not be found.', '/404') + header()
     body += '''
@@ -516,10 +725,13 @@ def build():
     <p>The page you're looking for doesn't exist.</p>
     <a class="btn btn--ink" data-magnetic href="/shop" style="margin-top:12px">Back to the shop</a>
   </div>
-</article>''' + FOOTER
+</article>''' + footer()
     write('404.html', body)
     # sitemap + robots + vercel config
     urls = ['/', '/shop', '/about', '/faq', '/contact', '/shipping-returns', '/privacy', '/terms'] + [f"/products/{p['handle']}" for p in PRODUCTS]
+    urls += [f"/{pg['slug']}" for pg in SIMPLE if f"/{pg['slug']}" not in urls]
+    if POSTS:
+        urls += ['/blog/'] + [f"/blog/{p['slug']}" for p in POSTS]
     write('sitemap.xml', '<?xml version="1.0" encoding="UTF-8"?>\n<urlset xmlns="http://www.sitemaps.org/schemas/sitemap/0.9">\n' + ''.join(f'  <url><loc>{SITE}{u}</loc></url>\n' for u in urls) + '</urlset>\n')
     write('robots.txt', f'User-agent: *\nAllow: /\nSitemap: {SITE}/sitemap.xml\n')
     write('vercel.json', json.dumps({"cleanUrls": True, "trailingSlash": False,
@@ -528,5 +740,7 @@ def build():
                                                      {"key": "Referrer-Policy", "value": "strict-origin-when-cross-origin"},
                                                      {"key": "X-Frame-Options", "value": "SAMEORIGIN"}]}]}, indent=2))
 
-build()
-print('ok')
+
+if __name__ == '__main__':
+    build()
+    print('ok')

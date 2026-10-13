@@ -436,3 +436,36 @@ button,input,select{font:inherit;color:inherit;-webkit-tap-highlight-color:trans
 .js .prose.lines .ln,.js .body.lines .ln{display:inline;transform:none}
 .hero__hint{transition:opacity .3s}
 .hero__media:has(.qv.is-open) .hero__hint{opacity:0}
+
+/* ==========================================================================
+   Uploaded photos + Journal (blog)
+   ========================================================================== */
+.ph__img{position:absolute;inset:0;width:100%;height:100%;object-fit:cover}
+.thumb .ph__img{pointer-events:none}
+.gallery__main .ph__img{transition:opacity .35s var(--ease-soft)}
+.gallery__main .ph__img.is-swapping{opacity:0}
+
+.post-grid{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:56px 24px}
+.post-card{display:flex;flex-direction:column;gap:18px;text-decoration:none;min-width:0}
+.post-card__media{aspect-ratio:4/3}
+@media (hover:hover) and (pointer:fine){.post-card:hover .media__layer{transform:scale(1.04)}}
+.post-card__meta{display:flex;flex-direction:column;gap:8px}
+.post-card__meta time{font-size:10px;letter-spacing:.24em;text-transform:uppercase;color:var(--muted)}
+.post-card__title{margin:0;font:400 24px/1.25 var(--serif);letter-spacing:-.01em}
+.post-card__meta p{margin:0;color:var(--ink-2);line-height:1.7}
+.post-card .link-caps{align-self:flex-start;min-height:36px}
+.post .simple__hero .crumbs{margin-bottom:4px}
+.post__cover{margin:0 0 44px}
+.post__cover img{width:100%;aspect-ratio:3/2;object-fit:cover;background:var(--sand-2)}
+.post__body{font-size:17px}
+.post__body img{width:100%;height:auto;margin:32px 0;background:var(--sand-2)}
+.post__body figure{margin:32px 0}
+.post__body figure img{margin:0}
+.post__body figcaption{margin-top:10px;font-size:13px;color:var(--muted)}
+.post__body blockquote{margin:36px 0;padding:0 0 0 24px;border-left:1px solid var(--gold);font:400 26px/1.4 var(--italic);font-style:italic;color:var(--ink)}
+.post__body blockquote p{color:inherit;line-height:inherit}
+.post__body hr{border:0;border-top:1px solid var(--line);margin:44px 0}
+.post-more{padding-top:clamp(56px,7vw,96px);border-top:1px solid var(--line)}
+.post-more .head{margin-bottom:36px}
+@media (max-width:1100px){.post-grid{grid-template-columns:repeat(2,minmax(0,1fr))}}
+@media (max-width:760px){.post-grid{grid-template-columns:minmax(0,1fr);gap:44px}}

@@ -1,0 +1,176 @@
+[
+ {
+  "handle": "lumiere-stacking-ring",
+  "name": "Lumière Stacking Ring",
+  "type": "Ring",
+  "cat": "rings",
+  "tags": "new bestsellers",
+  "material": "18k gold plated · stainless steel",
+  "price": 48,
+  "was": null,
+  "badge": "New",
+  "tone": "ph--1",
+  "features": [
+   "Water resistant",
+   "Tarnish free",
+   "Nickel free"
+  ],
+  "sizes": [
+   "50",
+   "52",
+   "54",
+   "56",
+   "58"
+  ],
+  "desc": "Delicate, stackable, and designed to be worn every single day. The Lumière ring pairs beautifully on its own or layered with other pieces from the Éclat collection. Crafted in 18k gold plated stainless steel — it won't tarnish, won't irritate, and won't let you down.",
+  "details": "18k gold plated stainless steel. Designed to stack with other Éclat rings.",
+  "photos": [
+   "ring on its own",
+   "stacked on the hand",
+   "side profile",
+   "in the gift box"
+  ],
+  "pairs": [
+   "douceur-chain-necklace",
+   "lumiere-douceur-set",
+   "petale-drop-earrings"
+  ],
+  "images": [],
+  "hidden": false
+ },
+ {
+  "handle": "douceur-chain-necklace",
+  "name": "Douceur Chain Necklace",
+  "type": "Necklace",
+  "cat": "necklaces",
+  "tags": "new bestsellers gifts",
+  "material": "18k gold plated · 45 cm chain",
+  "price": 65,
+  "was": null,
+  "badge": "New",
+  "tone": "ph--2",
+  "features": [
+   "Water resistant",
+   "Gift ready"
+  ],
+  "sizes": null,
+  "desc": "A whisper of a necklace — fine chain, crescent moon pendant. The Douceur sits at the collarbone and adds just the right amount of light. Order it alone, or layer it with the Lumière ring for a full Éclat look. Comes in our signature gift box, ready to give.",
+  "details": "18k gold plated. 45 cm chain with crescent moon pendant.",
+  "photos": [
+   "necklace on the collarbone",
+   "pendant detail",
+   "chain flat lay",
+   "in the gift box"
+  ],
+  "pairs": [
+   "lumiere-stacking-ring",
+   "lumiere-douceur-set",
+   "velours-bangle"
+  ],
+  "images": [],
+  "hidden": false
+ },
+ {
+  "handle": "petale-drop-earrings",
+  "name": "Pétale Drop Earrings",
+  "type": "Earrings",
+  "cat": "earrings",
+  "tags": "",
+  "material": "Sterling silver 925",
+  "price": 52,
+  "was": null,
+  "badge": "",
+  "tone": "ph--3",
+  "features": [
+   "Hypoallergenic",
+   "Nickel free"
+  ],
+  "sizes": null,
+  "desc": "Three petals, one elegant drop. The Pétale earrings frame the face with softness and movement — light enough to wear all day, beautiful enough to wear every night. Made in genuine 925 sterling silver, they're hypoallergenic and safe for even the most sensitive ears.",
+  "details": "Genuine 925 sterling silver. Sold as a pair.",
+  "photos": [
+   "earrings worn",
+   "petal detail",
+   "pair flat lay",
+   "in the gift box"
+  ],
+  "pairs": [
+   "douceur-chain-necklace",
+   "lumiere-stacking-ring",
+   "velours-bangle"
+  ],
+  "images": [],
+  "hidden": false
+ },
+ {
+  "handle": "velours-bangle",
+  "name": "Velours Bangle",
+  "type": "Bracelet",
+  "cat": "bracelets",
+  "tags": "",
+  "material": "18k gold plated · adjustable",
+  "price": 72,
+  "was": 90,
+  "badge": "Sale",
+  "tone": "ph--4",
+  "features": [
+   "Water resistant",
+   "Small batch",
+   "Adjustable"
+  ],
+  "sizes": null,
+  "desc": "Thick, bold, and quietly luxurious. The Velours bangle makes a statement without trying. The knurled texture catches the light beautifully, and the adjustable opening means it fits most wrist sizes comfortably. A piece you'll reach for every morning.",
+  "details": "18k gold plated with a knurled texture. Adjustable opening fits most wrists.",
+  "photos": [
+   "bangle on the wrist",
+   "texture detail",
+   "side profile",
+   "in the gift box"
+  ],
+  "pairs": [
+   "lumiere-stacking-ring",
+   "douceur-chain-necklace",
+   "petale-drop-earrings"
+  ],
+  "images": [],
+  "hidden": false
+ },
+ {
+  "handle": "lumiere-douceur-set",
+  "name": "Lumière & Douceur Set",
+  "type": "Set",
+  "cat": "sets",
+  "tags": "new gifts",
+  "material": "Ring and necklace · gift boxed",
+  "price": 105,
+  "was": null,
+  "badge": "Gift",
+  "tone": "ph--1",
+  "features": [
+   "Gift ready",
+   "Water resistant"
+  ],
+  "sizes": [
+   "50",
+   "52",
+   "54",
+   "56",
+   "58"
+  ],
+  "desc": "The Lumière ring and the Douceur necklace — two of our most-loved pieces, together in one box. Designed to be worn as a set or separately, they share the same refined finish and quiet confidence. Comes beautifully packaged, ready to give or to keep.",
+  "details": "Lumière Stacking Ring and Douceur Chain Necklace, 18k gold plated, in one gift box.",
+  "photos": [
+   "the set together",
+   "worn together",
+   "ring detail",
+   "in the gift box"
+  ],
+  "pairs": [
+   "lumiere-stacking-ring",
+   "douceur-chain-necklace",
+   "velours-bangle"
+  ],
+  "images": [],
+  "hidden": false
+ }
+]

@@ -71,6 +71,17 @@
       thumbs.forEach(function (o) { o.setAttribute('aria-pressed', 'false'); });
       t.setAttribute('aria-pressed', 'true');
       if (main) main.className = 'ph gallery__main ' + t.dataset.thumb;
+      var mainImg = document.getElementById('gallery-img');
+      if (mainImg && t.dataset.src && mainImg.getAttribute('src') !== t.dataset.src) {
+        mainImg.classList.add('is-swapping');
+        var next = new Image();
+        next.onload = next.onerror = function () {
+          mainImg.src = t.dataset.src;
+          mainImg.alt = t.dataset.alt || '';
+          mainImg.classList.remove('is-swapping');
+        };
+        next.src = t.dataset.src;
+      }
     });
   });
 

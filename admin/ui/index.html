@@ -1,0 +1,36 @@
+<!doctype html>
+<html lang="tr">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Éclat Admin</title>
+<link rel="icon" type="image/png" href="/assets/favicon.png">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=DM+Sans:opsz,wght@9..40,300;9..40,400;9..40,500;9..40,600&family=Fraunces:opsz,wght@9..144,300;9..144,400&family=Instrument+Serif:ital@1&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="/admin.css">
+</head>
+<body>
+<div class="app">
+  <aside class="side">
+    <a class="side__logo" href="#/products"><img src="/assets/logo-ink.png" alt="Éclat By Sev"><span>Admin</span></a>
+    <nav class="side__nav" id="nav">
+      <a href="#/products" data-nav="products"><svg viewBox="0 0 24 24"><path d="M5 8h14l-1 13H6L5 8z"/><path d="M9 8V6a3 3 0 016 0v2"/></svg>Ürünler</a>
+      <a href="#/home" data-nav="home"><svg viewBox="0 0 24 24"><path d="M4 11l8-6 8 6v9h-5v-6h-6v6H4z"/></svg>Ana sayfa</a>
+      <a href="#/pages" data-nav="pages"><svg viewBox="0 0 24 24"><path d="M6 3h9l4 4v14H6z"/><path d="M14 3v5h5M9 13h7M9 17h7"/></svg>Sayfalar</a>
+      <a href="#/blog" data-nav="blog"><svg viewBox="0 0 24 24"><path d="M4 20l4-1 11-11-3-3L5 16z"/><path d="M14 6l3 3"/></svg>Blog</a>
+      <a href="#/media" data-nav="media"><svg viewBox="0 0 24 24"><rect x="3" y="5" width="18" height="14" rx="1"/><circle cx="9" cy="10" r="1.6"/><path d="M21 16l-5-5-8 8"/></svg>Medya</a>
+    </nav>
+    <div class="side__foot">
+      <a class="btn btn--ghost btn--block" id="preview-link" target="_blank" rel="noopener">Siteyi önizle ↗</a>
+      <button class="btn btn--ink btn--block" id="publish-btn" type="button">Yayınla <span class="count" id="publish-count" hidden></span></button>
+      <p class="side__hint">Kaydet: bu bilgisayarda saklar.<br>Yayınla: canlı siteye gönderir.</p>
+    </div>
+  </aside>
+  <main class="main" id="view" tabindex="-1"></main>
+</div>
+<div class="toasts" id="toasts" aria-live="polite"></div>
+<div class="modal" id="modal" hidden><div class="modal__box" role="dialog" aria-modal="true"></div></div>
+<script src="/admin.js"></script>
+</body>
+</html>

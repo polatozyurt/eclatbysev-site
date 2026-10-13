@@ -1,0 +1,87 @@
+{
+ "brand": {
+  "email": "info@eclatbysev.com",
+  "instagram": "eclatbysev"
+ },
+ "announce": [
+  "Free shipping over €75",
+  "30-day returns",
+  "Handcrafted in small batches"
+ ],
+ "seo": {
+  "title": "Éclat By Sev — Handcrafted statement jewellery",
+  "description": "Statement jewellery designed by Sev and handcrafted in small batches. Water resistant, nickel free pieces made to be worn every day.",
+  "image": ""
+ },
+ "hero": {
+  "eyebrow": "New collection · Autumn 2026",
+  "title": "Jewellery that\ntells *your* story",
+  "lead": "Statement pieces, handcrafted in small batches. Water resistant, nickel free and made to be worn every day.",
+  "cta": "Shop the collection",
+  "image": "",
+  "imageAlt": "Hands wearing the Lumière Stacking Ring and Douceur Chain Necklace",
+  "hotspots": [
+   {"product": "lumiere-stacking-ring", "x": 52, "y": 56},
+   {"product": "douceur-chain-necklace", "x": 30, "y": 22}
+  ]
+ },
+ "promise": [
+  "Handcrafted in small batches",
+  "Free shipping over €75",
+  "30-day easy returns",
+  "Ships in 3–5 days"
+ ],
+ "collections": {
+  "eyebrow": "Shop by collection",
+  "title": "Pieces for *every* moment",
+  "tiles": [
+   {"name": "Rings", "category": "rings", "image": ""},
+   {"name": "Necklaces", "category": "necklaces", "image": ""},
+   {"name": "Earrings", "category": "earrings", "image": ""},
+   {"name": "Bracelets & Anklets", "category": "bracelets", "image": ""},
+   {"name": "Sets", "category": "sets", "image": ""}
+  ]
+ },
+ "newIn": {
+  "eyebrow": "Just arrived",
+  "title": "New in",
+  "products": ["lumiere-stacking-ring", "douceur-chain-necklace", "petale-drop-earrings", "velours-bangle"]
+ },
+ "philosophy": {
+  "eyebrow": "The philosophy",
+  "quote": "Every piece\nholds a\n*quiet power.*",
+  "body": "Éclat isn't just jewellery.\nIt's the ring you reach for before a big day.\nThe earrings you wear when you want to feel like yourself again.",
+  "image": ""
+ },
+ "feature": {
+  "eyebrow": "Gift ready",
+  "title": "The Lumière & Douceur Set",
+  "text": "Our stacking ring and chain necklace, paired and boxed in our signature gift box.",
+  "product": "lumiere-douceur-set",
+  "cta": "Shop the set",
+  "image": ""
+ },
+ "story": {
+  "eyebrow": "Our story",
+  "title": "Made by hand.\n*Made with heart.*",
+  "body": "Éclat By Sev was born from a simple belief —\nthat jewellery should feel like a second skin.\nFounded by Sev, each collection is designed and handcrafted in small batches,\nwith attention to every curve and detail.",
+  "word": "éclat",
+  "definition": "French for radiance. It's what we want every woman who wears our pieces to feel — seen, luminous, and entirely herself.",
+  "images": ["", ""]
+ },
+ "instagram": {
+  "images": ["", "", "", "", "", ""]
+ },
+ "join": {
+  "eyebrow": "Stay in the loop",
+  "title": "New pieces. *Early access.*",
+  "text": "New collections and small-batch drops land on Instagram first. Online checkout opens soon — until then, order any piece by email."
+ },
+ "blog": {
+  "navLabel": "Journal",
+  "eyebrow": "Journal",
+  "title": "Notes from the *atelier*",
+  "intro": "Styling ideas, care tips and the stories behind each collection.",
+  "description": "Styling ideas, jewellery care tips and stories from the Éclat By Sev atelier."
+ }
+}
