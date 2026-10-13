@@ -1,9 +1,13 @@
 #!/usr/bin/env python3
 """Generates the static Éclat By Sev site into ../eclat-site."""
-import os, html, json, pathlib
+import os, html, json, pathlib, hashlib
 
 OUT = pathlib.Path(__file__).resolve().parent.parent / 'site'
 SITE = 'https://eclatbysev.com'
+
+def asset_v(name):
+    """Short content hash so browsers fetch new CSS/JS right after each deploy."""
+    return hashlib.sha1((OUT / 'assets' / name).read_bytes()).hexdigest()[:10]
 EMAIL = 'info@eclatbysev.com'
 
 FONTS = ('<link rel="preconnect" href="https://fonts.googleapis.com">'
@@ -96,7 +100,7 @@ def head(title, desc, path, extra='', bodycls=''):
 <meta name="theme-color" content="#F6F1EA">
 <link rel="icon" type="image/png" href="/assets/favicon.png">
 {FONTS}
-<link rel="stylesheet" href="/assets/style.css">
+<link rel="stylesheet" href="/assets/style.css?v={asset_v('style.css')}">
 {extra}
 </head>
 <body class="{bodycls}">
@@ -177,7 +181,7 @@ FOOTER = f'''
   <a class="dock__item" href="/#collections" data-dock="collections"><svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.4" aria-hidden="true"><rect x="4" y="4" width="7" height="7"/><rect x="13" y="4" width="7" height="7"/><rect x="4" y="13" width="7" height="7"/><rect x="13" y="13" width="7" height="7"/></svg><span>Collections</span></a>
   <a class="dock__item" href="https://instagram.com/eclatbysev" data-dock="insta"><svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.4" aria-hidden="true"><rect x="3" y="3" width="18" height="18" rx="5"/><circle cx="12" cy="12" r="4"/><circle cx="17.5" cy="6.5" r=".6" fill="currentColor"/></svg><span>Instagram</span></a>
 </nav>
-<script src="/assets/site.js" defer></script>
+<script src="/assets/site.js?v={asset_v('site.js')}" defer></script>
 </body>
 </html>
 '''
