@@ -434,3 +434,5 @@ button,input,select{font:inherit;color:inherit;-webkit-tap-highlight-color:trans
 }
 /* Paragraph lines keep natural wrapping: opacity-only stagger */
 .js .prose.lines .ln,.js .body.lines .ln{display:inline;transform:none}
+.hero__hint{transition:opacity .3s}
+.hero__media:has(.qv.is-open) .hero__hint{opacity:0}
