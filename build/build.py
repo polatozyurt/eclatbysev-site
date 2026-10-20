@@ -8,7 +8,7 @@ Content lives in JSON so the local admin panel (admin/server.py) can edit it:
   content/posts.json     blog / journal posts
 Uploaded images live in site/assets/uploads/.
 """
-import html, json, pathlib, hashlib, re, datetime
+import html, json, os, pathlib, hashlib, re, datetime
 
 ROOT = pathlib.Path(__file__).resolve().parent.parent
 OUT = ROOT / 'site'
@@ -733,12 +733,34 @@ def build():
     if POSTS:
         urls += ['/blog/'] + [f"/blog/{p['slug']}" for p in POSTS]
     write('sitemap.xml', '<?xml version="1.0" encoding="UTF-8"?>\n<urlset xmlns="http://www.sitemaps.org/schemas/sitemap/0.9">\n' + ''.join(f'  <url><loc>{SITE}{u}</loc></url>\n' for u in urls) + '</urlset>\n')
-    write('robots.txt', f'User-agent: *\nAllow: /\nSitemap: {SITE}/sitemap.xml\n')
+    write('robots.txt', f'User-agent: *\nAllow: /\nDisallow: /admin\nSitemap: {SITE}/sitemap.xml\n')
     write('vercel.json', json.dumps({"cleanUrls": True, "trailingSlash": False,
         "headers": [{"source": "/assets/(.*)", "headers": [{"key": "Cache-Control", "value": "public, max-age=604800"}]},
                     {"source": "/(.*)", "headers": [{"key": "X-Content-Type-Options", "value": "nosniff"},
                                                      {"key": "Referrer-Policy", "value": "strict-origin-when-cross-origin"},
                                                      {"key": "X-Frame-Options", "value": "SAMEORIGIN"}]}]}, indent=2))
+
+    admin_ui()
+    # Which commit this deploy was built from (Netlify sets COMMIT_REF); the admin polls it after saving.
+    if os.environ.get('COMMIT_REF'):
+        write('build.json', json.dumps({'commit': os.environ['COMMIT_REF'],
+                                        'built': datetime.datetime.now(datetime.timezone.utc).isoformat(timespec='seconds')}))
+
+
+def admin_ui():
+    """Copy the admin panel to site/admin/ (served at eclatbysev.com/admin, talks to /api/admin/*)."""
+    src = ROOT / 'admin' / 'ui'
+    if not src.is_dir():
+        return
+    ver = {n: hashlib.sha1((src / n).read_bytes()).hexdigest()[:10] for n in ('admin.css', 'admin.js')}
+    page = (src / 'index.html').read_text(encoding='utf-8')
+    page = page.replace('href="/admin.css"', f'href="/admin/admin.css?v={ver["admin.css"]}"')
+    page = page.replace('<script src="/admin.js"></script>',
+                        f"<script>window.ECLAT_API='/api/admin/'</script>\n<script src=\"/admin/admin.js?v={ver['admin.js']}\"></script>")
+    page = page.replace('<meta charset="utf-8">', '<meta charset="utf-8">\n<meta name="robots" content="noindex, nofollow">', 1)
+    write('admin/index.html', page)
+    for n in ('admin.css', 'admin.js'):
+        (OUT / 'admin' / n).write_bytes((src / n).read_bytes())
 
 
 if __name__ == '__main__':

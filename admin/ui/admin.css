@@ -229,3 +229,39 @@ button.mitem:hover{border-color:var(--ink)}
   .side__hint{display:none}
   .row,.row--3{grid-template-columns:minmax(0,1fr)}
 }
+
+/* ---------- Online panel: login, deploy status ---------- */
+.cloud-only{display:none!important}
+body.is-cloud .cloud-only{display:flex!important}
+body.is-cloud .local-only{display:none!important}
+.deploy{align-items:center;gap:8px;padding:9px 12px;border-radius:var(--r);background:var(--bg);font-size:12.5px;color:var(--ink-2)}
+.deploy__dot{width:8px;height:8px;border-radius:50%;background:var(--ok);flex:0 0 auto}
+.deploy[data-state=pending] .deploy__dot{background:var(--gold);animation:pulse 1.2s ease-in-out infinite}
+.deploy[data-state=slow] .deploy__dot{background:var(--warn)}
+.deploy[data-state=slow]{background:var(--warn-soft);color:var(--warn)}
+@keyframes pulse{50%{opacity:.3}}
+.who{align-items:center;justify-content:space-between;gap:8px;padding:2px 4px 0;font-size:12.5px;color:var(--muted)}
+.who #who{font-weight:500;color:var(--ink-2);text-transform:capitalize}
+body.is-login .side{display:none}
+body.is-login .app{grid-template-columns:minmax(0,1fr)}
+body.is-login .main{padding:0}
+.login{min-height:100vh;display:flex;align-items:center;justify-content:center;padding:24px}
+.login__box{width:min(380px,100%);display:flex;flex-direction:column;gap:16px;padding:36px 32px 28px;background:var(--paper);border:1px solid var(--line);border-radius:12px;box-shadow:var(--shadow)}
+.login__logo{width:128px;margin:0 auto 4px}
+.login__box h1{margin:0 0 4px;text-align:center;font:300 26px var(--serif)}
+.login__box .in{min-height:44px;font-size:16px}
+.login__box .btn{min-height:46px;font-size:15px}
+.login__err{margin:0;padding:10px 12px;border-radius:var(--r);background:var(--bad-soft);color:var(--bad);font-size:13px}
+.login__back{align-self:center;font-size:12.5px;color:var(--muted);text-decoration:none}
+.login__back:hover{color:var(--ink)}
+@media (max-width:820px){
+  body.is-cloud .side__foot{flex-wrap:wrap}
+  .deploy,.who{width:100%}
+}
+@media (max-width:820px){
+  .pgrid{grid-template-columns:repeat(2,minmax(0,1fr));gap:10px}
+  .pcard__meta{padding:10px}
+  .pcard__name{font-size:15px}
+  .side__logo img{width:84px}
+  .side__nav a{padding:7px 9px}
+}

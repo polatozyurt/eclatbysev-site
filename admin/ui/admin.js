@@ -53,20 +53,98 @@
   function kb(n) { return n > 1048576 ? (n / 1048576).toFixed(1) + ' MB' : Math.round(n / 1024) + ' KB'; }
 
   /* ------------------------------------------------------------------ api */
+  // Local panel (python admin/server.py) talks to /api/*; the online panel at /admin talks to /api/admin/*.
+  var CLOUD = !!window.ECLAT_API;
+  var BASE = window.ECLAT_API || '/api/';
   function api(method, url, body, raw) {
-    var opt = { method: method, headers: { 'X-Eclat-Admin': '1' } };
+    url = url.replace(/^\/api\//, BASE);
+    var opt = { method: method, headers: { 'X-Eclat-Admin': '1' }, credentials: 'same-origin' };
+    var kind = (url.split('?')[0].match(/\/(products|posts|pages|settings)$/) || [])[1];
+    if (CLOUD && method === 'PUT' && kind && S && S.shas && S.shas[kind]) opt.headers['X-Base-Sha'] = S.shas[kind];
     if (body !== undefined) {
       if (raw) opt.body = body;
       else { opt.headers['Content-Type'] = 'application/json'; opt.body = JSON.stringify(body); }
     }
     return fetch(url, opt).then(function (r) {
-      return r.json().catch(function () { return { ok: false, error: 'Sunucudan yanıt alınamadı' }; }).then(function (j) {
+      return r.json().catch(function () {
+        return { ok: false, error: r.status === 429 ? 'Çok fazla deneme. Bir dakika bekleyip tekrar deneyin.' : r.status === 413 ? 'Dosya çok büyük.' : 'Sunucudan yanıt alınamadı (' + r.status + ')' };
+      }).then(function (j) {
+        if (CLOUD && r.status === 401 && j.login) { showLogin(); var e1 = new Error('Oturumunuz kapandı, tekrar giriş yapın.'); e1.quiet = true; throw e1; }
         if (!r.ok || j.ok === false) {
-          var err = new Error(j.error || ('Hata ' + r.status)); err.log = j.log; throw err;
+          var err = new Error(j.error || ('Hata ' + r.status)); err.log = j.log; err.status = r.status; err.setup = j.setup; throw err;
         }
+        if (CLOUD && kind && j.sha && S && S.shas) S.shas[kind] = j.sha;
+        if (CLOUD && j.commit) trackDeploy(j.commit);
         return j;
       });
-    }, function () { throw new Error('Sunucuya ulaşılamadı. Terminalde admin panelinin açık olduğundan emin olun.'); });
+    }, function () {
+      throw new Error(CLOUD ? 'Sunucuya ulaşılamadı. İnternet bağlantınızı kontrol edin.' : 'Sunucuya ulaşılamadı. Terminalde admin panelinin açık olduğundan emin olun.');
+    });
+  }
+
+  // Images uploaded since the last deploy aren't on the site yet: show them through the API instead.
+  document.addEventListener('error', function (e) {
+    var img = e.target;
+    if (!CLOUD || !img || img.tagName !== 'IMG' || img.dataset.fallback) return;
+    var src = img.getAttribute('src') || '';
+    if (src.indexOf('/assets/uploads/') !== 0) return;
+    img.dataset.fallback = '1';
+    img.src = BASE + 'file?path=' + encodeURIComponent(src);
+  }, true);
+
+  /* ------------------------------------------------------------------ login (online panel) */
+  function showLogin(msg) {
+    S = null; dirty = false;
+    document.body.classList.add('is-login');
+    view.innerHTML = '<div class="login"><form class="login__box" id="login" autocomplete="on">' +
+      '<img src="/assets/logo-ink.png" alt="Éclat By Sev" class="login__logo">' +
+      '<h1>Admin girişi</h1>' +
+      '<div class="f"><label for="lu">Kullanıcı adı</label><input class="in" id="lu" name="username" autocomplete="username" autocapitalize="none" spellcheck="false" required></div>' +
+      '<div class="f"><label for="lp">Şifre</label><input class="in" id="lp" name="password" type="password" autocomplete="current-password" required></div>' +
+      '<p class="login__err" id="lerr"' + (msg ? '' : ' hidden') + '>' + esc(msg || '') + '</p>' +
+      '<button class="btn btn--ink btn--block" type="submit">Giriş yap</button>' +
+      '<a class="login__back" href="/">← eclatbysev.com</a></form></div>';
+    var f = $('#login'), err = $('#lerr');
+    try { var last = localStorage.getItem('eclat-admin-user'); if (last) { $('#lu').value = last; $('#lp').focus(); } else $('#lu').focus(); } catch (x) { $('#lu').focus(); }
+    f.addEventListener('submit', function (e) {
+      e.preventDefault();
+      var b = $('button[type=submit]', f); b.disabled = true; b.textContent = 'Giriş yapılıyor…'; err.hidden = true;
+      api('POST', '/api/login', { user: $('#lu').value, password: $('#lp').value }).then(function (j) {
+        try { localStorage.setItem('eclat-admin-user', j.user); } catch (x) { /* ignore */ }
+        document.body.classList.remove('is-login');
+        start();
+      }, function (x) {
+        err.textContent = x.message; err.hidden = false; b.disabled = false; b.textContent = 'Giriş yap';
+        $('#lp').select();
+      });
+    });
+  }
+  function logout() {
+    if (dirty && !confirm('Kaydedilmemiş değişiklikler var. Yine de çıkılsın mı?')) return;
+    api('POST', '/api/logout', {}).then(function () { location.hash = ''; showLogin(); }, fail);
+  }
+
+  /* ------------------------------------------------------------------ deploy status (online panel) */
+  var pendingCommit = null, deployTimer = null, deployStarted = 0, deployFromSave = false;
+  function setDeploy(state, text) {
+    var el = $('#deploy'); if (!el) return;
+    el.dataset.state = state; $('#deploy-text').textContent = text;
+  }
+  function trackDeploy(commit) {
+    pendingCommit = commit; deployStarted = Date.now(); deployFromSave = true;
+    setDeploy('pending', 'Yayına alınıyor…');
+    clearTimeout(deployTimer); deployTimer = setTimeout(pollDeploy, 15000);
+  }
+  function pollDeploy() {
+    if (!pendingCommit) return;
+    var waiting = pendingCommit;
+    api('GET', '/api/deploy?sha=' + encodeURIComponent(waiting)).then(function (j) {
+      if (pendingCommit !== waiting) return;
+      if (j.live) { pendingCommit = null; setDeploy('live', 'Canlı site güncel'); if (deployFromSave) toast('Değişiklikler canlı sitede'); return; }
+      var min = (Date.now() - deployStarted) / 60000;
+      setDeploy(min > 4 ? 'slow' : 'pending', min > 4 ? 'Hâlâ yayınlanıyor… (Netlify’daki deploy kaydına bakın)' : 'Yayına alınıyor…');
+      deployTimer = setTimeout(pollDeploy, min > 4 ? 30000 : 8000);
+    }, function () { deployTimer = setTimeout(pollDeploy, 20000); });
   }
 
   /* ------------------------------------------------------------------ toasts & modal */
@@ -77,7 +155,7 @@
     $('#toasts').appendChild(t);
     setTimeout(function () { t.remove(); }, bad ? 7000 : 2600);
   }
-  function fail(e) { toast(e.message || String(e), true); if (e.log) console.error(e.log); }
+  function fail(e) { if (e && e.quiet) return; toast(e.message || String(e), true); if (e.log) console.error(e.log); }
 
   var modalEl = $('#modal');
   function openModal(html) {
@@ -104,7 +182,7 @@
     dirty = false;
     var d = $('#dirty'); if (d) d.hidden = true;
   }
-  function previewUrl(path) { return 'http://' + location.hostname + ':' + S.previewPort + (path || '/'); }
+  function previewUrl(path) { return CLOUD ? (path || '/') : 'http://' + location.hostname + ':' + S.previewPort + (path || '/'); }
 
   function wireSave(fn) {
     saveFn = function () {
@@ -894,7 +972,7 @@
       if (isNew) list.push(draft); else list[list.indexOf(orig)] = draft;
       return api('PUT', '/api/posts', list).then(function (j) {
         S.posts = j.data; clean();
-        toast(draft.status === 'published' ? 'Kaydedildi — yazı sitede (önizlemede) görünüyor' : 'Taslak kaydedildi');
+        toast(draft.status === 'published' ? (CLOUD ? 'Kaydedildi — yazı birkaç dakika içinde sitede' : 'Kaydedildi — yazı sitede (önizlemede) görünüyor') : 'Taslak kaydedildi');
         if (isNew || orig.slug !== draft.slug) go('#/blog/' + encodeURIComponent(draft.slug)); else postEdit(draft.slug);
       });
     });
@@ -935,6 +1013,7 @@
 
   /* ------------------------------------------------------------------ publish */
   function refreshGit() {
+    if (CLOUD) return Promise.resolve({ available: false, cloud: true });
     return api('GET', '/api/git').then(function (g) {
       var c = $('#publish-count'), n = g.available ? g.changes.length : 0;
       c.hidden = !n; c.textContent = n;
@@ -973,6 +1052,7 @@
   var lastHash = location.hash, skipNext = false;
   function go(hash) { clean(); if (location.hash === hash) route(); else location.hash = hash; }
   function route() {
+    if (!S) return;
     var parts = location.hash.replace(/^#\/?/, '').split('/').map(decodeURIComponent);
     var sec = parts[0] || 'products', id = parts[1];
     $$('#nav a').forEach(function (a) { a.classList.toggle('is-on', a.dataset.nav === sec); });
@@ -994,11 +1074,28 @@
     if ((e.metaKey || e.ctrlKey) && e.key.toLowerCase() === 's') { e.preventDefault(); if (saveFn) saveFn(); }
   });
 
-  api('GET', '/api/state').then(function (s) {
-    S = s;
-    $('#preview-link').href = previewUrl('/');
-    route(); refreshGit();
-  }, function (e) {
-    view.innerHTML = '<div class="empty"><h3>Admin sunucusuna bağlanılamadı</h3><p>' + esc(e.message) + '</p></div>';
-  });
+  function start() {
+    view.innerHTML = '<p class="muted" style="padding:32px">Yükleniyor…</p>';
+    if (CLOUD) document.body.classList.add('is-login');
+    api('GET', '/api/state').then(function (s) {
+      S = s;
+      document.body.classList.remove('is-login');
+      document.body.classList.toggle('is-cloud', CLOUD);
+      $('#preview-link').href = previewUrl('/');
+      $('#preview-link').textContent = CLOUD ? 'Siteyi aç ↗' : 'Siteyi önizle ↗';
+      if (CLOUD) {
+        $('#who').textContent = s.user;
+        $('#side-hint').innerHTML = 'Kaydet’e bastığınızda değişiklik<br>1–2 dakika içinde canlı sitede görünür.';
+        if (s.head) { pendingCommit = s.head; deployStarted = Date.now(); deployFromSave = false; setDeploy('pending', 'Kontrol ediliyor…'); pollDeploy(); }
+      }
+      route(); refreshGit();
+    }, function (e) {
+      if (e.quiet) return;
+      view.innerHTML = '<div class="empty"><h3>' + (e.setup ? 'Panel henüz ayarlanmadı' : 'Sunucuya bağlanılamadı') + '</h3><p>' + esc(e.message) + '</p></div>';
+    });
+  }
+  if (CLOUD) {
+    $('#logout').addEventListener('click', logout);
+  }
+  start();
 })();

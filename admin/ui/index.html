@@ -13,7 +13,7 @@
 <body>
 <div class="app">
   <aside class="side">
-    <a class="side__logo" href="#/products"><img src="/assets/logo-ink.png" alt="Éclat By Sev"><span>Admin</span></a>
+    <a class="side__logo" href="#/products"><img src="/assets/logo-ink.png" alt="Éclat By Sev"><span lang="en">Admin</span></a>
     <nav class="side__nav" id="nav">
       <a href="#/products" data-nav="products"><svg viewBox="0 0 24 24"><path d="M5 8h14l-1 13H6L5 8z"/><path d="M9 8V6a3 3 0 016 0v2"/></svg>Ürünler</a>
       <a href="#/home" data-nav="home"><svg viewBox="0 0 24 24"><path d="M4 11l8-6 8 6v9h-5v-6h-6v6H4z"/></svg>Ana sayfa</a>
@@ -22,9 +22,11 @@
       <a href="#/media" data-nav="media"><svg viewBox="0 0 24 24"><rect x="3" y="5" width="18" height="14" rx="1"/><circle cx="9" cy="10" r="1.6"/><path d="M21 16l-5-5-8 8"/></svg>Medya</a>
     </nav>
     <div class="side__foot">
+      <div class="deploy cloud-only" id="deploy" data-state="idle"><span class="deploy__dot"></span><span id="deploy-text">Site güncel</span></div>
       <a class="btn btn--ghost btn--block" id="preview-link" target="_blank" rel="noopener">Siteyi önizle ↗</a>
-      <button class="btn btn--ink btn--block" id="publish-btn" type="button">Yayınla <span class="count" id="publish-count" hidden></span></button>
-      <p class="side__hint">Kaydet: bu bilgisayarda saklar.<br>Yayınla: canlı siteye gönderir.</p>
+      <button class="btn btn--ink btn--block local-only" id="publish-btn" type="button">Yayınla <span class="count" id="publish-count" hidden></span></button>
+      <p class="side__hint" id="side-hint">Kaydet: bu bilgisayarda saklar.<br>Yayınla: canlı siteye gönderir.</p>
+      <div class="who cloud-only"><span id="who"></span><button class="btn btn--sm btn--ghost" id="logout" type="button">Çıkış</button></div>
     </div>
   </aside>
   <main class="main" id="view" tabindex="-1"></main>

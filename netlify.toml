@@ -1,6 +1,7 @@
 [build]
   publish = "site"
-  command = ""
+  # Generates site/ from content/ (Python standard library only) and copies the admin panel to site/admin/.
+  command = "python3 build/build.py"
 
 [[headers]]
   for = "/assets/*"
@@ -13,3 +14,14 @@
     X-Content-Type-Options = "nosniff"
     Referrer-Policy = "strict-origin-when-cross-origin"
     X-Frame-Options = "SAMEORIGIN"
+
+[[headers]]
+  for = "/admin/*"
+  [headers.values]
+    X-Robots-Tag = "noindex, nofollow"
+    Cache-Control = "no-cache"
+
+[[headers]]
+  for = "/build.json"
+  [headers.values]
+    Cache-Control = "no-cache"

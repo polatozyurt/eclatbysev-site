@@ -1,6 +1,6 @@
 # Éclat By Sev — eclatbysev.com
 
-Static storefront, deployed by Netlify on every push to `main`.
+Static storefront, deployed by Netlify on every push to `main` (Netlify runs `python3 build/build.py`).
 
 - `content/` — all site content as JSON (edited through the admin panel)
   - `settings.json` home page copy, announcement bar, contact details, blog intro
@@ -10,9 +10,27 @@ Static storefront, deployed by Netlify on every push to `main`.
 - `site/` — the published site, generated from `content/` (don't edit the HTML by hand)
 - `site/assets/uploads/` — images uploaded through the admin panel
 - `build/build.py` — generates `site/` from `content/` (`python3 build/build.py`)
-- `admin/` — local admin panel
+- `admin/` — admin panel (local version + the UI used online)
+- `netlify/` — functions behind the online admin (login, saving to GitHub, uploads)
 
-## Admin panel
+## Online admin — eclatbysev.com/admin
+
+Log in with a username and password. **Kaydet** commits the change to GitHub; Netlify rebuilds
+and the live site updates in 1–2 minutes (the sidebar shows “Yayına alınıyor…” → “Canlı site güncel”).
+Photos are stored in the repo too (`site/assets/uploads/`); an upload alone doesn't trigger a
+deploy, it goes live with the next save.
+
+One-time setup in Netlify → Project configuration → Environment variables (scope: Functions),
+then **Deploys → Trigger deploy**:
+
+| Key | Value |
+| --- | --- |
+| `ADMIN_USERS` | `polat:a-long-password,sev:another-long-password` — passwords must be 10+ characters |
+| `GITHUB_TOKEN` | Fine-grained GitHub token, only this repository, permission **Contents: Read and write** |
+
+Changing either value logs everyone out. Login attempts are rate-limited (10 per minute per IP).
+
+## Local admin panel
 
 Mac: double-click **`admin/Eclat Admin.command`**
 (first time: right-click → Open, because macOS asks about files downloaded from the internet).
